@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>NFC Scanner</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 2rem;
+      text-align: center;
+    }
+    #status {
+      margin-top: 1rem;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h1>Scan NFC Tag</h1>
+  <button id="scanBtn">Start Scan</button>
+  <div id="status">Waiting...</div>
+
+  <script>
+    const status = document.getElementById('status');
+    const scanBtn = document.getElementById('scanBtn');
+
+    scanBtn.addEventListener('click', async () => {
+      if ('NDEFReader' in window) {
+        try {
+          const reader = new NDEFReader();
+          await reader.scan();
+          status.textContent = 'Scanning...';
+
+          reader.onreading = event => {
+            const tagId = event.serialNumber || 'Unknown';
+            status.textContent = `Tag scanned: ${tagId}`;
+
+            // Send tag ID to parent Budibase app
+            window.parent.postMessage({ tagId }, '*');
+          };
+
+          reader.onerror = () => {
+            status.textContent = 'Error reading tag.';
+          };
+        } catch (error) {
+          status.textContent = `Scan failed: ${error}`;
+        }
+      } else {
+        status.textContent = 'Web NFC not supported on this device.';
+      }
+    });
+  </script>
+</body>
+</html>
