@@ -1,13 +1,18 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>NFC Scan Test</title>
+  <title>NFC Test Redirect</title>
 </head>
 <body>
+  <h1>Simulating NFC Scan...</h1>
   <script>
-    // Simulate a successful scan with a test serial number
-    window.parent.postMessage({ serial: "12345678" }, "*");
+    const testChipId = "TEST123456";
+    const budibaseUrl = "https://form.cac.dk/app/linjetur#/chipscan"; // Replace with your actual Budibase app URL
+
+    // Simulate a short delay before redirect
+    setTimeout(() => {
+      window.location.href = `${budibaseUrl}?chip=${testChipId}`;
+    }, 1500);
   </script>
 </body>
 </html>
