@@ -23,7 +23,13 @@
   <script>
     const status = document.getElementById('status');
     const scanBtn = document.getElementById('scanBtn');
+    
+if (!("NDEFReader" in window)) {
+  window.parent.postMessage({ error: "Web NFC not supported on this device." }, "*");
+}
 
+
+    
     scanBtn.addEventListener('click', async () => {
       if ('NDEFReader' in window) {
         try {
