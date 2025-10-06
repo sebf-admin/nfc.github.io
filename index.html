@@ -2,59 +2,47 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>NFC Scanner</title>
+  <title>NFC Scan Page</title>
   <style>
     body {
-      font-family: sans-serif;
-      padding: 2rem;
+      font-family: Arial, sans-serif;
+      padding: 2em;
       text-align: center;
     }
     #status {
-      margin-top: 1rem;
-      font-weight: bold;
+      margin-top: 1em;
+      font-size: 1.2em;
+      color: green;
     }
   </style>
 </head>
 <body>
-  <h1>Scan NFC Tag</h1>
-  <button id="scanBtn">Start Scan</button>
-  <div id="status">Waiting...</div>
+  <h1>NFC Scan Page</h1>
+  <p>Place your NFC chip near the reader to scan.</p>
+  <div id="status">Initializing...</div>
 
   <script>
-    const status = document.getElementById('status');
-    const scanBtn = document.getElementById('scanBtn');
-    
-if (!("NDEFReader" in window)) {
-  window.parent.postMessage({ error: "Web NFC not supported on this device." }, "*");
-}
+    const statusDiv = document.getElementById("status");
 
-
-    
-    scanBtn.addEventListener('click', async () => {
-      if ('NDEFReader' in window) {
-        try {
-          const reader = new NDEFReader();
-          await reader.scan();
-          status.textContent = 'Scanning...';
-
-          reader.onreading = event => {
-            const tagId = event.serialNumber || 'Unknown';
-            status.textContent = `Tag scanned: ${tagId}`;
-
-            // Send tag ID to parent Budibase app
-            window.parent.postMessage({ tagId }, '*');
-          };
-
-          reader.onerror = () => {
-            status.textContent = 'Error reading tag.';
-          };
-        } catch (error) {
-          status.textContent = `Scan failed: ${error}`;
-        }
-      } else {
-        status.textContent = 'Web NFC not supported on this device.';
-      }
-    });
+    // Check for Web NFC support
+    if (!("NDEFReader" in window)) {
+      window.parent.postMessage({ error: "Web NFC not supported on this device." }, "*");
+      statusDiv.textContent = "Web NFC not supported. Fallback triggered.";
+    } else {
+      // Try to scan NFC tag
+      const reader = new NDEFReader();
+      reader.scan().then(() => {
+        statusDiv.textContent = "Scanning for NFC tag...";
+        reader.onreading = event => {
+          const serial = event.serialNumber || "unknown";
+          window.parent.postMessage({ serial: serial }, "*");
+          statusDiv.textContent = `Serial number scanned: ${serial}`;
+        };
+      }).catch(error => {
+        window.parent.postMessage({ error: error.message }, "*");
+        statusDiv.textContent = `Error: ${error.message}`;
+      });
+    }
   </script>
 </body>
 </html>
