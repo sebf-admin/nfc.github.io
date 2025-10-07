@@ -1,18 +1,47 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>NFC Test Redirect</title>
+  <title>Basic NFC Test</title>
 </head>
 <body>
-  <h1>Simulating NFC Scan...</h1>
-  <script>
-    const testChipId = "TEST123456";
-    const budibaseUrl = "https://form.cac.dk/app/linjetur#/chipscan"; // Replace with your actual Budibase app URL
+  <button id="scanButton">Scan NFC Tag</button>
+  <div id="output" style="margin-top: 1rem; font-weight: bold;"></div>
 
-    // Simulate a short delay before redirect
-    setTimeout(() => {
-      window.location.href = `${budibaseUrl}?chip=${testChipId}`;
-    }, 1500);
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const scanButton = document.getElementById("scanButton");
+      const output = document.getElementById("output");
+
+      if (!("NDEFReader" in window)) {
+        output.innerText = "Web NFC is not supported on this device/browser.";
+        return;
+      }
+
+      scanButton.addEventListener("click", async () => {
+        output.innerText = "Scan button clicked. Waiting for tag...";
+        console.log("Scan button clicked");
+
+        try {
+          const ndef = new NDEFReader();
+          await ndef.scan();
+          output.innerText = "Scanning started. Hold a tag near the device.";
+          console.log("Scanning started");
+
+          ndef.addEventListener("reading", ({ serialNumber }) => {
+            output.innerText = "Tag read! Serial Number: " + serialNumber;
+            console.log("Tag read:", serialNumber);
+          });
+
+          ndef.addEventListener("readingerror", () => {
+            output.innerText = "Reading error. Try another tag.";
+            console.log("Reading error");
+          });
+        } catch (error) {
+          output.innerText = "Error: " + error.message;
+          console.error("Scan error:", error);
+        }
+      });
+    });
   </script>
 </body>
 </html>
