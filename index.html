@@ -1,43 +1,129 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Basic NFC Test</title>
+  <title>NFC Scanner - Budibase Integration</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 50px auto;
+      padding: 20px;
+      text-align: center;
+    }
+    button {
+      padding: 15px 30px;
+      font-size: 18px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    #output {
+      margin-top: 2rem;
+      font-weight: bold;
+      font-size: 16px;
+      padding: 15px;
+      border-radius: 5px;
+    }
+    .success {
+      background-color: #d4edda;
+      color: #155724;
+    }
+    .error {
+      background-color: #f8d7da;
+      color: #721c24;
+    }
+    .info {
+      background-color: #d1ecf1;
+      color: #0c5460;
+    }
+  </style>
 </head>
 <body>
+  <h1>NFC Tag Scanner</h1>
   <button id="scanButton">Scan NFC Tag</button>
-  <div id="output" style="margin-top: 1rem; font-weight: bold;"></div>
-
+  <div id="output"></div>
+  
   <script>
+    // REPLACE THIS WITH YOUR ACTUAL BUDIBASE WEBHOOK URL
+    const BUDIBASE_WEBHOOK_URL = 'YOUR_BUDIBASE_WEBHOOK_URL_HERE';
+    
+    async function sendToBudibase(tagId) {
+      try {
+        const response = await fetch(BUDIBASE_WEBHOOK_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            tagId: tagId,
+            timestamp: new Date().toISOString()
+          })
+        });
+        
+        if (response.ok) {
+          return { success: true };
+        } else {
+          return { success: false, error: 'Failed to send to Budibase' };
+        }
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
+    }
+    
     document.addEventListener("DOMContentLoaded", () => {
       const scanButton = document.getElementById("scanButton");
       const output = document.getElementById("output");
-
+      
       if (!("NDEFReader" in window)) {
         output.innerText = "Web NFC is not supported on this device/browser.";
+        output.className = "error";
         return;
       }
-
+      
       scanButton.addEventListener("click", async () => {
         output.innerText = "Scan button clicked. Waiting for tag...";
+        output.className = "info";
         console.log("Scan button clicked");
-
+        
         try {
           const ndef = new NDEFReader();
           await ndef.scan();
           output.innerText = "Scanning started. Hold a tag near the device.";
+          output.className = "info";
           console.log("Scanning started");
-
-          ndef.addEventListener("reading", ({ serialNumber }) => {
-            output.innerText = "Tag read! Serial Number: " + serialNumber;
+          
+          ndef.addEventListener("reading", async ({ serialNumber }) => {
+            output.innerText = "Tag read! Serial Number: " + serialNumber + "\nSending to Budibase...";
+            output.className = "info";
             console.log("Tag read:", serialNumber);
+            
+            // Send to Budibase
+            const result = await sendToBudibase(serialNumber);
+            
+            if (result.success) {
+              output.innerText = "✅ Success!\nTag ID: " + serialNumber + "\nRegistered in Budibase";
+              output.className = "success";
+              console.log("Successfully sent to Budibase");
+            } else {
+              output.innerText = "⚠️ Tag read but failed to send to Budibase\nTag ID: " + serialNumber + "\nError: " + result.error;
+              output.className = "error";
+              console.error("Failed to send to Budibase:", result.error);
+            }
           });
-
+          
           ndef.addEventListener("readingerror", () => {
             output.innerText = "Reading error. Try another tag.";
+            output.className = "error";
             console.log("Reading error");
           });
         } catch (error) {
           output.innerText = "Error: " + error.message;
+          output.className = "error";
           console.error("Scan error:", error);
         }
       });
