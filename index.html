@@ -2,6 +2,7 @@
 <html>
 <head>
   <title>NFC Scanner - Budibase Integration</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -18,6 +19,7 @@
       border: none;
       border-radius: 5px;
       cursor: pointer;
+      margin: 10px;
     }
     button:hover {
       background-color: #45a049;
@@ -46,12 +48,12 @@
 <body>
   <h1>NFC Tag Scanner</h1>
   <button id="scanButton">Scan NFC Tag</button>
+  <button onclick="window.close()">Return</button>
   <div id="output"></div>
-  
+
   <script>
-    // REPLACE THIS WITH YOUR ACTUAL BUDIBASE WEBHOOK URL
-    const BUDIBASE_WEBHOOK_URL = https://form.cac.dk/api/webhooks/schema/app_dev_adcbbebb4e554806b00f4973996b31c3/wh_9eeb4820e42940299762a76e44501464;
-    
+    const BUDIBASE_WEBHOOK_URL = "https://form.cac.dk/api/webhooks/trigger/app_adcbbebb4e554806b00f4973996b31c3/wh_9eeb4820e42940299762a76e44501464";
+
     async function sendToBudibase(tagId) {
       try {
         const response = await fetch(BUDIBASE_WEBHOOK_URL, {
@@ -64,7 +66,7 @@
             timestamp: new Date().toISOString()
           })
         });
-        
+
         if (response.ok) {
           return { success: true };
         } else {
@@ -74,57 +76,50 @@
         return { success: false, error: error.message };
       }
     }
-    
+
     document.addEventListener("DOMContentLoaded", () => {
       const scanButton = document.getElementById("scanButton");
       const output = document.getElementById("output");
-      
+
       if (!("NDEFReader" in window)) {
         output.innerText = "Web NFC is not supported on this device/browser.";
         output.className = "error";
         return;
       }
-      
+
       scanButton.addEventListener("click", async () => {
         output.innerText = "Scan button clicked. Waiting for tag...";
         output.className = "info";
-        console.log("Scan button clicked");
-        
+
         try {
           const ndef = new NDEFReader();
           await ndef.scan();
           output.innerText = "Scanning started. Hold a tag near the device.";
           output.className = "info";
-          console.log("Scanning started");
-          
+
           ndef.addEventListener("reading", async ({ serialNumber }) => {
             output.innerText = "Tag read! Serial Number: " + serialNumber + "\nSending to Budibase...";
             output.className = "info";
-            console.log("Tag read:", serialNumber);
-            
-            // Send to Budibase
+
             const result = await sendToBudibase(serialNumber);
-            
+
             if (result.success) {
               output.innerText = "✅ Success!\nTag ID: " + serialNumber + "\nRegistered in Budibase";
               output.className = "success";
-              console.log("Successfully sent to Budibase");
+              setTimeout(() => window.close(), 2000); // Auto-close after 2 seconds
             } else {
               output.innerText = "⚠️ Tag read but failed to send to Budibase\nTag ID: " + serialNumber + "\nError: " + result.error;
               output.className = "error";
-              console.error("Failed to send to Budibase:", result.error);
             }
           });
-          
+
           ndef.addEventListener("readingerror", () => {
             output.innerText = "Reading error. Try another tag.";
             output.className = "error";
-            console.log("Reading error");
           });
         } catch (error) {
           output.innerText = "Error: " + error.message;
           output.className = "error";
-          console.error("Scan error:", error);
         }
       });
     });
